@@ -311,6 +311,69 @@ namespace NuGet.PackageManagement.VisualStudio
             }
         }
 
+        public async Task<IEnumerable<string>> GetDeferredProjectsFilePath()
+        {
+#if VS14
+            // Not applicable for Dev14 so always return empty list.
+            return Enumerable.Empty<string>();
+#else
+            return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                var projectPaths = new List<string>();
+                IEnumHierarchies enumHierarchies;
+                var guid = Guid.Empty;
+                var hr = _vsSolution.GetProjectEnum((uint)__VSENUMPROJFLAGS3.EPF_DEFERRED, ref guid, out enumHierarchies);
+
+                ErrorHandler.ThrowOnFailure(hr);
+
+                // Loop all projects found
+                if (enumHierarchies != null)
+                {
+                    // Loop projects found
+                    var hierarchy = new IVsHierarchy[1];
+                    uint fetched = 0;
+                    while (enumHierarchies.Next(1, hierarchy, out fetched) == VSConstants.S_OK && fetched == 1)
+                    {
+                        string projectPath;
+                        hierarchy[0].GetCanonicalName(VSConstants.VSITEMID_ROOT, out projectPath);
+
+                        if (!string.IsNullOrEmpty(projectPath))
+                        {
+                            projectPaths.Add(projectPath);
+                        }
+                    }
+                }
+
+                return projectPaths;
+            });
+#endif
+        }
+
+        public async Task<bool> SolutionHasDeferredProjects()
+        {
+#if VS14
+            // for Dev14 always return false since DPL not exists there.
+            return false;
+#else
+            return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                // check if solution is DPL enabled or not. 
+                if (!IsSolutionDPLEnabled)
+                {
+                    return false;
+                }
+
+                // Get deferred projects count of current solution
+                var value = GetVSSolutionProperty((int)(__VSPROPID7.VSPROPID_DeferredProjectCount));
+                return (int)value != 0;
+            });
+#endif
+        }
+
         public bool IsSolutionDPLEnabled
         {
             get
@@ -346,8 +409,7 @@ namespace NuGet.PackageManagement.VisualStudio
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                     EnsureInitialize();
-                    object value;
-                    _vsSolution.GetProperty((int)(__VSPROPID4.VSPROPID_IsSolutionFullyLoaded), out value);
+                    var value = GetVSSolutionProperty((int)(__VSPROPID4.VSPROPID_IsSolutionFullyLoaded));
                     return (bool)value;
                 });
             }
@@ -429,16 +491,27 @@ namespace NuGet.PackageManagement.VisualStudio
             Debug.Assert(ThreadHelper.CheckAccess());
 
             // Check if user is doing File - New File without saving the solution.
-            object value;
-            _vsSolution.GetProperty((int)(__VSPROPID.VSPROPID_IsSolutionSaveAsRequired), out value);
+            var value = GetVSSolutionProperty((int)(__VSPROPID.VSPROPID_IsSolutionSaveAsRequired));
             if ((bool)value)
             {
                 return true;
             }
 
             // Check if user unchecks the "Tools - Options - Project & Soltuions - Save new projects when created" option
-            _vsSolution.GetProperty((int)(__VSPROPID2.VSPROPID_DeferredSaveSolution), out value);
+            value = GetVSSolutionProperty((int)(__VSPROPID2.VSPROPID_DeferredSaveSolution));
             return (bool)value;
+        }
+
+        private object GetVSSolutionProperty(int propId)
+        {
+            Debug.Assert(ThreadHelper.CheckAccess());
+
+            object value;
+            int hr = _vsSolution.GetProperty(propId, out value);
+
+            ErrorHandler.ThrowOnFailure(hr);
+
+            return value;
         }
 
         private void OnSolutionExistsAndFullyLoaded()
@@ -852,7 +925,7 @@ namespace NuGet.PackageManagement.VisualStudio
             dependentEnvDTEProjects.Add(dependentEnvDTEProject);
         }
 
-        #region IVsSelectionEvents
+#region IVsSelectionEvents
 
         public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
@@ -884,9 +957,9 @@ namespace NuGet.PackageManagement.VisualStudio
             }
         }
 
-        #endregion IVsSelectionEvents
+#endregion IVsSelectionEvents
 
-        #region IVsSolutionManager
+#region IVsSolutionManager
 
         public async Task<NuGetProject> GetOrCreateProjectAsync(EnvDTE.Project project, INuGetProjectContext projectContext)
         {
@@ -905,6 +978,6 @@ namespace NuGet.PackageManagement.VisualStudio
             return nuGetProject;
         }
 
-        #endregion
+#endregion
     }
 }
