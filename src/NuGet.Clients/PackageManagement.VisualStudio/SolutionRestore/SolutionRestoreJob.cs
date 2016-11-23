@@ -186,15 +186,12 @@ namespace NuGet.PackageManagement.VisualStudio
                 var isSolutionAvailable = _solutionManager.IsSolutionAvailable;
 
                 // Check if solution has deferred projects
-                var packageReferencesDict = new Dictionary<PackageReference, List<string>>(new PackageReferenceComparer());
-                var packagesSpecs = new List<PackageSpec>();
-                if (_solutionManager.IsSolutionDPLEnabled && _solutionManager.SolutionHasDeferredProjects())
+                var deferredProjectsData = new DeferredProjectRestoreData(new Dictionary<PackageReference, List<string>>(), new List<PackageSpec>());
+                if (_solutionManager.SolutionHasDeferredProjects())
                 {
                     var deferredProjectsPath = _solutionManager.GetDeferredProjectsFilePath();
 
-                    var deferredProjectsData = await DeferredProjectRestoreUtility.GetDeferredProjectsData(_deferredWorkspaceService, deferredProjectsPath, token);
-                    packageReferencesDict = deferredProjectsData.PackageReferenceDict;
-                    packagesSpecs = deferredProjectsData.PackageSpecs;
+                    deferredProjectsData = await DeferredProjectRestoreUtility.GetDeferredProjectsData(_deferredWorkspaceService, deferredProjectsPath, token);
                 }
 
                 // Get the projects from the SolutionManager
@@ -205,12 +202,12 @@ namespace NuGet.PackageManagement.VisualStudio
                 // projects with packages.config. OR 
                 // any of the deferred project is type of packages.config, If so, perform package restore on them
                 if (projects.Any(project => !(project is INuGetIntegratedProject)) ||
-                    packageReferencesDict.Any())
+                    deferredProjectsData.PackageReferenceDict.Count > 0)
                 {
                     await RestorePackagesOrCheckForMissingPackagesAsync(
                         solutionDirectory,
                         isSolutionAvailable,
-                        packageReferencesDict,
+                        deferredProjectsData.PackageReferenceDict,
                         token);
                 }
 
@@ -222,7 +219,7 @@ namespace NuGet.PackageManagement.VisualStudio
                     dependencyGraphProjects,
                     forceRestore,
                     isSolutionAvailable,
-                    packagesSpecs,
+                    deferredProjectsData.PackageSpecs,
                     token);
             }
             finally
@@ -296,7 +293,7 @@ namespace NuGet.PackageManagement.VisualStudio
             List<IDependencyGraphProject> projects,
             bool forceRestore,
             bool isSolutionAvailable,
-            List<PackageSpec> packageSpecs,
+            IReadOnlyList<PackageSpec> packageSpecs,
             CancellationToken token)
         {
             // Only continue if there are some  build integrated type projects.
@@ -457,7 +454,7 @@ namespace NuGet.PackageManagement.VisualStudio
         private async Task RestorePackagesOrCheckForMissingPackagesAsync(
             string solutionDirectory,
             bool isSolutionAvailable,
-            Dictionary<PackageReference, List<string>> packageReferencesDict,
+            IReadOnlyDictionary<PackageReference, List<string>> packageReferencesDict,
             CancellationToken token)
         {
             if (string.IsNullOrEmpty(solutionDirectory))
@@ -469,7 +466,9 @@ namespace NuGet.PackageManagement.VisualStudio
             var packages = (await _packageRestoreManager.GetPackagesInSolutionAsync(
                 solutionDirectory, token)).ToList();
 
-            packages.AddRange(_packageRestoreManager.GetPackagesRestoreData(solutionDirectory, packageReferencesDict));
+            packages.AddRange(
+                _packageRestoreManager.GetPackagesRestoreData(
+                    solutionDirectory, packageReferencesDict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToList())));
 
             if (IsConsentGranted(_settings))
             {
