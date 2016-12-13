@@ -187,9 +187,9 @@ namespace NuGet.PackageManagement.VisualStudio
 
                 // Check if solution has deferred projects
                 var deferredProjectsData = new DeferredProjectRestoreData(new Dictionary<PackageReference, List<string>>(), new List<PackageSpec>());
-                if (_solutionManager.SolutionHasDeferredProjects())
+                if (await _solutionManager.SolutionHasDeferredProjects())
                 {
-                    var deferredProjectsPath = _solutionManager.GetDeferredProjectsFilePath();
+                    var deferredProjectsPath = await _solutionManager.GetDeferredProjectsFilePath();
 
                     deferredProjectsData = await DeferredProjectRestoreUtility.GetDeferredProjectsData(_deferredWorkspaceService, deferredProjectsPath, token);
                 }

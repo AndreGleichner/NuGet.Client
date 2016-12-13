@@ -50,12 +50,12 @@ namespace NuGet.PackageManagement.VisualStudio
         /// Returns true if solution has any project in deferred state.
         /// </summary>
         /// <returns>Deferred projects state.</returns>
-        bool SolutionHasDeferredProjects();
+        Task<bool> SolutionHasDeferredProjects();
 
         /// <summary>
         /// Retrieves deferred projects file path from current solution.
         /// </summary>
         /// <returns>Deferred prokects file path.</returns>
-        IEnumerable<string> GetDeferredProjectsFilePath();
+        Task<IEnumerable<string>> GetDeferredProjectsFilePath();
     }
 }
