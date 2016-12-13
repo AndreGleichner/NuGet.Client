@@ -43,6 +43,6 @@ namespace NuGet.PackageManagement.VisualStudio
         /// Retrieves deferred projects file path from current solution.
         /// </summary>
         /// <returns>Deferred prokects file path.</returns>
-        IEnumerable<string> GetDeferredProjectsFilePath();
+        Task<IEnumerable<string>> GetDeferredProjectsFilePath();
     }
 }

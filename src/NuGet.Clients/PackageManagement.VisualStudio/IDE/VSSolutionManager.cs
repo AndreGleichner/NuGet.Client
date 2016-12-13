@@ -293,13 +293,13 @@ namespace NuGet.PackageManagement.VisualStudio
             }
         }
 
-        public IEnumerable<string> GetDeferredProjectsFilePath()
+        public async Task<IEnumerable<string>> GetDeferredProjectsFilePath()
         {
 #if VS14
             // Not applicable for Dev14 so always return empty list.
             return Enumerable.Empty<string>();
 #else
-            return ThreadHelper.JoinableTaskFactory.Run(async delegate
+            return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
