@@ -315,7 +315,7 @@ namespace NuGet.PackageManagement.VisualStudio
         {
 #if VS14
             // Not applicable for Dev14 so always return empty list.
-            return Enumerable.Empty<string>();
+            return await Task.Run(() => Enumerable.Empty<string>());
 #else
             return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
@@ -355,7 +355,7 @@ namespace NuGet.PackageManagement.VisualStudio
         {
 #if VS14
             // for Dev14 always return false since DPL not exists there.
-            return false;
+            return await Task.Run(() => false);
 #else
             return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
