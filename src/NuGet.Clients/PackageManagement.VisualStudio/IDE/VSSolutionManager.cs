@@ -311,11 +311,11 @@ namespace NuGet.PackageManagement.VisualStudio
             }
         }
 
-        public async Task<IEnumerable<string>> GetDeferredProjectsFilePath()
+        public async Task<IEnumerable<string>> GetDeferredProjectsFilePathAsync()
         {
 #if VS14
             // Not applicable for Dev14 so always return empty list.
-            return await Task.Run(() => Enumerable.Empty<string>());
+            return await Task.FromResult(Enumerable.Empty<string>());
 #else
             return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
@@ -351,11 +351,11 @@ namespace NuGet.PackageManagement.VisualStudio
 #endif
         }
 
-        public async Task<bool> SolutionHasDeferredProjects()
+        public async Task<bool> SolutionHasDeferredProjectsAsync()
         {
 #if VS14
             // for Dev14 always return false since DPL not exists there.
-            return await Task.Run(() => false);
+            return await Task.FromResult(false);
 #else
             return await ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
