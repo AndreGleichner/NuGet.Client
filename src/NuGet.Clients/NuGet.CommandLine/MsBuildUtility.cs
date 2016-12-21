@@ -440,7 +440,17 @@ namespace NuGet.CommandLine
         /// <returns>ProjectCollection instance to use for toolset enumeration</returns>
         private static IDisposable LoadProjectCollection()
         {
+<<<<<<< HEAD
             foreach (var version in MSBuildVersions)
+=======
+            try
+            {
+                var msBuildTypesAssembly = Assembly.Load("Microsoft.Build, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
+                Type projectCollectionType = msBuildTypesAssembly.GetType("Microsoft.Build.Evaluation.ProjectCollection", throwOnError: true);
+                return Activator.CreateInstance(projectCollectionType) as IDisposable;
+            }
+            catch (Exception)
+>>>>>>> dd0f0aa... Adding support for dotnet add package command
             {
                 try
                 {
