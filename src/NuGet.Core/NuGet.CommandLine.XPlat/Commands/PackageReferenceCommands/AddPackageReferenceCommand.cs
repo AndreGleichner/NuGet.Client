@@ -14,10 +14,8 @@ namespace NuGet.CommandLine.XPlat
 {
     public static class AddPackageReferenceCommand
     {
-        private const string MSBuildExeName = "MSBuild.dll";
-
         public static void Register(CommandLineApplication app, Func<ILogger> getLogger,
-            Func<IAddPackageReferenceCommandRunner> getCommandRunner)
+            Func<IPackageReferenceCommandRunner> getCommandRunner)
         {
             app.Command("add", addpkg =>
             {
@@ -73,23 +71,39 @@ namespace NuGet.CommandLine.XPlat
                 {
                     ValidateArgument(id, id.Template);
                     ValidateArgument(projectPath, projectPath.Template);
+
                     if (!noRestore.HasValue())
                     {
                         ValidateArgument(dgFilePath, dgFilePath.Template);
                     }
+
+                    PackageReferenceArgs packageRefArgs;
                     var logger = getLogger();
-                    var noVersion = !version.HasValue();
-                    var packageVersion = version.HasValue() ? version.Value() : "*";
-                    var packageDependency = new PackageDependency(id.Values[0], VersionRange.Parse(packageVersion));
-                    var packageRefArgs = new PackageReferenceArgs(projectPath.Value(), packageDependency, logger)
+
+                    if (version.HasValue())
                     {
-                        Frameworks = StringUtility.Split(frameworks.Value()),
-                        Sources = StringUtility.Split(sources.Value()),
-                        PackageDirectory = packageDirectory.Value(),
-                        NoRestore = noRestore.HasValue(),
-                        NoVersion = noVersion,
-                        DgFilePath = dgFilePath.Value()
-                    };
+                        var packageDependency = new PackageDependency(id.Values[0],
+                            VersionRange.Parse(version.Value()));
+                        packageRefArgs = new PackageReferenceArgs(projectPath.Value(), packageDependency, logger)
+                        {
+                            Frameworks = StringUtility.Split(frameworks.Value()),
+                            Sources = StringUtility.Split(sources.Value()),
+                            PackageDirectory = packageDirectory.Value(),
+                            NoRestore = noRestore.HasValue(),
+                            DgFilePath = dgFilePath.Value()
+                        };
+                    }
+                    else
+                    {
+                        packageRefArgs = new PackageReferenceArgs(projectPath.Value(), id.Value(), logger)
+                        {
+                            Frameworks = StringUtility.Split(frameworks.Value()),
+                            Sources = StringUtility.Split(sources.Value()),
+                            PackageDirectory = packageDirectory.Value(),
+                            NoRestore = noRestore.HasValue(),
+                            DgFilePath = dgFilePath.Value()
+                        };
+                    }
                     var msBuild = new MSBuildAPIUtility();
                     var addPackageRefCommandRunner = getCommandRunner();
                     return addPackageRefCommandRunner.ExecuteCommand(packageRefArgs, msBuild);
