@@ -15,6 +15,10 @@ namespace NuGet.PackageManagement.UI
         public LicenseAcceptanceWindow()
         {
             InitializeComponent();
+            if (StandaloneSwitch.IsRunningStandalone)
+            {
+                Background = SystemColors.WindowBrush;
+            }
         }
 
         private void OnViewLicenseTermsRequestNavigate(object sender, RoutedEventArgs e)

@@ -17,6 +17,11 @@ namespace NuGet.PackageManagement.UI
                 return null;
             }
 
+            if (StandaloneSwitch.IsRunningStandalone)
+            {
+                return null;
+            }
+
             return parameter;
         }
 

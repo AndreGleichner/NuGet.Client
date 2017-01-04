@@ -18,6 +18,10 @@ namespace NuGet.PackageManagement.UI
             InitializeComponent();
             _doNotShowCheckBox.IsChecked = DotnetDeprecatedPrompt.GetDoNotShowPromptState();
 
+            if (StandaloneSwitch.IsRunningStandalone)
+            {
+                Background = SystemColors.WindowBrush;
+            }
             _initialized = true;
         }
 
