@@ -351,7 +351,7 @@ namespace NuGet.XPlat.FuncTest
         public async void AddPkg_FailureIncompatibleFrameworks(string packageFrameworks, string userInputFrameworks)
         {
             // Arrange
-
+            XPlatTestUtils.WaitForDebugger();
             using (var pathContext = new SimpleTestPathContext())
             {
                 var projectA = CreateProject(projectName, pathContext, "net46; netcoreapp1.0");
